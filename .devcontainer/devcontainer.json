@@ -1,0 +1,40 @@
+# .devcontainer/devcontainer.json
+{
+  "name": "Car Service Station Microservices",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "user-db", // We'll set this to one of the DBs for initial spin-up
+  "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.vscode-node-azure-pack",
+        "vscjava.vscode-java-pack",
+        "Pivotal.vscode-spring-boot",
+        "redhat.vscode-yaml",
+        "ms-azuretools.vscode-docker",
+        "vscode-icons.vscode-icons"
+      ]
+    }
+  },
+  "features": {
+    "docker-in-docker": {
+      "version": "latest"
+    },
+    "kubectl": {
+      "version": "latest"
+    },
+    "helm": {
+      "version": "latest"
+    },
+    "maven": {
+      "version": "latest"
+    },
+    "java": {
+      "version": "17"
+    },
+    "node": {
+      "version": "18"
+    }
+  },
+  "postCreateCommand": "npm install -g yarn"
+}
