@@ -2,7 +2,7 @@
 {
   "name": "Car Service Station Microservices",
   "dockerComposeFile": "docker-compose.yml",
-  "service": "user-db", // We'll set this to one of the DBs for initial spin-up
+  "service": "user-service", // Now we specify an application service as the main one to attach to
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "customizations": {
     "vscode": {
@@ -36,5 +36,5 @@
       "version": "18"
     }
   },
-  "postCreateCommand": "npm install -g yarn"
+  "postCreateCommand": "npm install -g yarn && cd /workspaces/${localWorkspaceFolderBasename} && ./mvnw clean install -DskipTests"
 }

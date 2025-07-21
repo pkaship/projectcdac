@@ -1,7 +1,8 @@
 # .devcontainer/docker-compose.yml
-version: '3.8'
+version: '3.8' # This version field is technically 'obsolete' in newer Docker Compose, but harmless to keep.
 
 services:
+  # --- Database Services ---
   user-db:
     image: mysql:8.0
     container_name: user-service-db
@@ -9,7 +10,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_password_user
       MYSQL_DATABASE: user_db
       MYSQL_USER: user_service_user
-      MYSQL_PASSWORD: user_service_password
+      MYSQL_PASSWORD: user_service_password # Matches healthcheck below
     ports:
       - "3306:3306" # Expose for potential local access
     volumes:
@@ -19,7 +20,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-      start_period: 30s
+      start_period: 30s # Give the database more time to start up before checking health
 
   vehicle-db:
     image: mysql:8.0
@@ -28,7 +29,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_password_vehicle
       MYSQL_DATABASE: vehicle_db
       MYSQL_USER: vehicle_service_user
-      MYSQL_PASSWORD: vehicle_service_password
+      MYSQL_PASSWORD: vehicle_service_password # Matches healthcheck below
     ports:
       - "3307:3306" # Different host port to avoid conflict
     volumes:
@@ -47,7 +48,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_password_booking
       MYSQL_DATABASE: booking_db
       MYSQL_USER: booking_service_user
-      MYSQL_PASSWORD: booking_service_password
+      MYSQL_PASSWORD: booking_service_password # Matches healthcheck below
     ports:
       - "3308:3306" # Different host port
     volumes:
@@ -66,7 +67,7 @@ services:
       MYSQL_ROOT_PASSWORD: root_password_sm
       MYSQL_DATABASE: service_management_db
       MYSQL_USER: sm_service_user
-      MYSQL_PASSWORD: sm_service_password
+      MYSQL_PASSWORD: sm_service_password # Matches healthcheck below
     ports:
       - "3309:3306" # Different host port
     volumes:
@@ -96,6 +97,90 @@ services:
       timeout: 5s
       retries: 10
       start_period: 30s
+
+  # --- Microservice Services ---
+  user-service:
+    build:
+      context: ../user-service # Relative path from .devcontainer to user-service folder
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000" # Expose the service's port
+    environment:
+      # Ensure DB_HOST points to the service name in this docker-compose.yml
+      DB_HOST: user-db
+      DB_USER: user_service_user
+      DB_PASSWORD: user_service_password
+      DB_NAME: user_db
+      JWT_SECRET: supersecretjwtkeythatshouldbemorecomplex
+    depends_on:
+      user-db:
+        condition: service_healthy # Ensure the DB is healthy before starting the service
+
+  vehicle-service:
+    build:
+      context: ../vehicle-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://vehicle-db:3306/vehicle_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: vehicle_service_user
+      SPRING_DATASOURCE_PASSWORD: vehicle_service_password
+      SERVER_PORT: 8081
+    depends_on:
+      vehicle-db:
+        condition: service_healthy
+
+  booking-service:
+    build:
+      context: ../booking-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://booking-db:3306/booking_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: booking_service_user
+      SPRING_DATASOURCE_PASSWORD: booking_service_password
+      SERVER_PORT: 8082
+    depends_on:
+      booking-db:
+        condition: service_healthy
+
+  service-management-service:
+    build:
+      context: ../service-management-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://service-management-db:3306/service_management_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: sm_service_user
+      SPRING_DATASOURCE_PASSWORD: sm_service_password
+      SERVER_PORT: 8083
+    depends_on:
+      service-management-db:
+        condition: service_healthy
+
+  notification-service:
+    build:
+      context: ../notification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://notification-db:3306/notification_db?useSSL=false&serverTimezone=UTC
+      SPRING_DATASOURCE_USERNAME: notification_service_user
+      SPRING_DATASOURCE_PASSWORD: notification_service_password
+      SERVER_PORT: 8084
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: your-email@gmail.com # IMPORTANT: Replace with your actual email
+      SPRING_MAIL_PASSWORD: your-email-app-password # IMPORTANT: Replace with a generated Gmail App Password
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: true
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: true
+    depends_on:
+      notification-db:
+        condition: service_healthy
 
 volumes:
   user_db_data:
